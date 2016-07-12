@@ -7,3 +7,7 @@ description = "Rust library for encoding/decoding string with local charset. It 
 repository = "https://github.com/bozaro/local-encoding-rs"
 
 [dependencies]
+
+[target.'cfg(windows)'.dependencies]
+winapi = "0.2.7"
+kernel32-sys = "0.2.2"
