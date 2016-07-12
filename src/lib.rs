@@ -1,12 +1,28 @@
-#![warn(missing_docs)]
+//! Rust library for encoding/decoding string with local charset. It usefull for work with ANSI
+//! strings on Windows.
+//!
+//! Unfortunately Windows widly use 8-bit character encoding instead UTF-8.
+//! This causes a lot of pain.
+//!
+//! For example, in Russian version:
+//!
+//!  * CP-1251 (ANSI codepage) used for 8-bit files;
+//!  * CP-866 (OEM codepage) used for console output.
+//!
+//! To convert between 8-bit and Unicode used Windows have function: MultiByteToWideChar and
+//! WideCharToMultiByte.
+//!
+//! This library provide simple function to convert between 8-bit and Unicode characters on Windows.
+//!
+//! UTF-8 used as 8-bit codepage for non-Windows system.
 
-#[cfg(windows)]
+#![warn(missing_docs)]
+#[cfg(any(windows, feature="doc"))]
 pub mod windows;
 #[cfg(windows)]
 pub use windows::{ansi_to_string, oem_to_string, string_to_ansi, string_to_oem};
-#[cfg(not(windows))]
 pub mod posix;
-#[cfg(not(windows))]
+#[cfg(any(not(windows), feature="doc"))]
 pub use posix::{ansi_to_string, oem_to_string, string_to_ansi, string_to_oem};
 
 #[cfg(test)]
