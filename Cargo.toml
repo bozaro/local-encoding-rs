@@ -6,7 +6,7 @@ authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
 build = "src/build.rs"
 description = "Rust library for encoding/decoding string with local charset. It usefull for work with ANSI strings on Windows."
 repository = "https://github.com/bozaro/local-encoding-rs"
-documentation = "https://bozaro.github.io/local-encoding-rs/local-encoding/"
+documentation = "https://bozaro.github.io/local-encoding-rs/local_encoding/"
 
 [dependencies]
 

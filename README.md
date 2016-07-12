@@ -20,7 +20,7 @@ This library provide simple function to convert between 8-bit and Unicode charac
 
 UTF-8 used as 8-bit codepage for non-Windows system.
 
-Rustdoc: https://bozaro.github.io/local-encoding-rs/local-encoding/
+Rustdoc: https://bozaro.github.io/local-encoding-rs/local_encoding/
 
 ## Usage
 
