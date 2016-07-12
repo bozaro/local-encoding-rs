@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["ansi_to_string","Convert ANSI 8-bit string to String."],["oem_to_string","Convert OEM 8-bit string to String."],["string_to_ansi","Convert String to ANSI 8-bit string."],["string_to_oem","Convert String to OEM 8-bit string."]]});

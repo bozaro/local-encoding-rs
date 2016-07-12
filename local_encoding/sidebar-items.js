@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["posix","UTF-8 string converting for non-Windows systems."]]});

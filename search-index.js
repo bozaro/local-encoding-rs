@@ -1,0 +1,3 @@
+var searchIndex = {};
+searchIndex["local_encoding"] = {"doc":"Rust library for encoding/decoding string with local charset. It usefull for work with ANSI\nstrings on Windows.","items":[[0,"posix","local_encoding","UTF-8 string converting for non-Windows systems.",null,null],[5,"oem_to_string","local_encoding::posix","Convert OEM 8-bit string to String.",null,null],[5,"ansi_to_string","","Convert ANSI 8-bit string to String.",null,null],[5,"string_to_oem","","Convert String to OEM 8-bit string.",null,{"inputs":[{"name":"str"}],"output":{"name":"result"}}],[5,"string_to_ansi","","Convert String to ANSI 8-bit string.",null,{"inputs":[{"name":"str"}],"output":{"name":"result"}}]],"paths":[]};
+initSearch(searchIndex);
