@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 #[cfg(windows)]
 pub mod windows;
 #[cfg(windows)]
