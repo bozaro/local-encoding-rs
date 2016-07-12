@@ -1,7 +1,11 @@
 #[cfg(windows)]
 pub mod windows;
 #[cfg(windows)]
-pub use windows::{oem_to_string, ansi_to_string, string_to_oem, string_to_ansi};
+pub use windows::{ansi_to_string, oem_to_string, string_to_ansi, string_to_oem};
+#[cfg(not(windows))]
+pub mod posix;
+#[cfg(not(windows))]
+pub use posix::{ansi_to_string, oem_to_string, string_to_ansi, string_to_oem};
 
 #[cfg(test)]
 mod tests {
