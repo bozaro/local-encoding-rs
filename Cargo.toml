@@ -11,7 +11,7 @@ documentation = "https://bozaro.github.io/local-encoding-rs/local_encoding/"
 [dependencies]
 
 [target.'cfg(windows)'.dependencies]
-winapi = "0.2.7"
+winapi = {version = "0.2.7", git = "https://github.com/retep998/winapi-rs.git", rev = "00ba888"}
 kernel32-sys = "0.2.2"
 
 [dev-dependencies]

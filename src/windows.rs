@@ -8,43 +8,18 @@ use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use self::winapi::{BOOL, DWORD};
 
-/// Always use precomposed characters, that is, characters having a single character value for
-/// a base or nonspacing character combination.
-pub const MB_PRECOMPOSED: DWORD = 0x00000001;
-/// Always use decomposed characters, that is, characters in which a base character and one or more
-/// nonspacing characters each have distinct code point values.
-pub const MB_COMPOSITE: DWORD = 0x00000002;
-/// Use glyph characters instead of control characters.
-pub const MB_USEGLYPHCHARS: DWORD = 0x00000004;
-/// Fail if an invalid input character is encountered.
-pub const MB_ERR_INVALID_CHARS: DWORD = 0x00000008;
-/// Convert composite characters, consisting of a base character and a nonspacing character,
-/// each with different character values.
-pub const WC_COMPOSITECHECK: DWORD = 0x00000200;
-/// Discard nonspacing characters during conversion.
-pub const WC_DISCARDNS: DWORD = 0x00000010;
-/// Default. Generate separate characters during conversion.
-pub const WC_SEPCHARS: DWORD = 0x00000020;
-/// Replace exceptions with the default character during conversion.
-pub const WC_DEFAULTCHAR: DWORD = 0x00000040;
-/// Fail if an invalid input character is encountered.
-pub const WC_ERR_INVALID_CHARS: DWORD = 0x00000080;
-/// Translate any Unicode characters that do not translate directly to multibyte equivalents to
-/// the default character specified by lpDefaultChar.
-pub const WC_NO_BEST_FIT_CHARS: DWORD = 0x00000400;
-
 /// Convert OEM 8-bit string to String.
 ///
 /// Use MultiByteToWideChar with current system OEM code page (CP_OEMCP).
 pub fn oem_to_string(data: &[u8]) -> Result<String> {
-    multi_byte_to_wide_char(winapi::CP_OEMCP, MB_ERR_INVALID_CHARS, data)
+    multi_byte_to_wide_char(winapi::CP_OEMCP, winapi::MB_ERR_INVALID_CHARS, data)
 }
 
 /// Convert ANSI 8-bit string to String.
 ///
 /// Use MultiByteToWideChar with system default Windows ANSI code page (CP_ACP).
 pub fn ansi_to_string(data: &[u8]) -> Result<String> {
-    multi_byte_to_wide_char(winapi::CP_ACP, MB_ERR_INVALID_CHARS, data)
+    multi_byte_to_wide_char(winapi::CP_ACP, winapi::MB_ERR_INVALID_CHARS, data)
 }
 
 /// Convert String to 8-bit string.
@@ -63,7 +38,7 @@ pub fn string_to_multibyte(codepage: DWORD,
                            -> Result<Vec<u8>> {
     let wstr: Vec<u16> = OsStr::new(data).encode_wide().collect();
     wide_char_to_multi_byte(codepage,
-                            WC_COMPOSITECHECK,
+                            winapi::WC_COMPOSITECHECK,
                             &wstr,
                             default_char,
                             default_char.is_none())
