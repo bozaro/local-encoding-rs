@@ -11,10 +11,12 @@ Unfortunately Windows widly use 8-bit character encoding instead UTF-8. This cau
 
 For example, in Russian version:
 
- * CP-1251 (ANSI codepage) used for 8-bit files;
- * CP-866 (OEM codepage) used for console output.
+ * [`CP-1251`](https://en.wikipedia.org/wiki/Windows-1251) (ANSI codepage) used for 8-bit files;
+ * [`CP-866`](https://en.wikipedia.org/wiki/Code_page_866) (OEM codepage) used for console output.
 
-To convert between 8-bit and Unicode used Windows have function: MultiByteToWideChar and WideCharToMultiByte.
+To convert between 8-bit and Unicode used Windows have function:
+[`MultiByteToWideChar`](https://msdn.microsoft.com/en-us/library/windows/desktop/dd319072%28v=vs.85%29.aspx) and 
+[`WideCharToMultiByte`](https://msdn.microsoft.com/en-us/library/windows/desktop/dd374130%28v=vs.85%29.aspx).
 
 This library provide simple function to convert between 8-bit and Unicode characters on Windows.
 
