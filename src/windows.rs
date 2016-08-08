@@ -300,3 +300,48 @@ fn wide_char_to_multi_byte_invalid() {
                    .unwrap(),
                (b" ".to_vec(), false));
 }
+
+#[cfg(test)]
+mod tests {
+    extern crate winapi;
+
+    use self::winapi::DWORD;
+    use super::*;
+    use super::super::Encoding;
+
+    pub struct CP1251;
+    pub struct CP866;
+
+    impl CodePage for CP1251 {
+        fn codepage() -> DWORD {
+            1251
+        }
+    }
+    impl CodePage for CP866 {
+        fn codepage() -> DWORD {
+            866
+        }
+    }
+    #[test]
+    fn cp1251_to_string_test() {
+        assert_eq!(CodePageEncoding::<CP1251>::to_string(b"\xD2\xE5\xF1\xF2").unwrap(),
+                   "Тест");
+    }
+    #[test]
+    fn string_to_cp1251_test() {
+        assert_eq!(CodePageEncoding::<CP1251>::to_bytes("Тест").unwrap(),
+                   b"\xD2\xE5\xF1\xF2");
+    }
+
+    #[test]
+    fn cp866_to_string_test() {
+        assert_eq!(CodePageEncoding::<CP866>::to_string(b"\x92\xA5\xE1\xE2").unwrap(),
+                   "Тест");
+    }
+
+    #[test]
+    fn string_to_cp866_test() {
+        assert_eq!(CodePageEncoding::<CP866>::to_bytes("Тест").unwrap(),
+                   b"\x92\xA5\xE1\xE2");
+    }
+}
