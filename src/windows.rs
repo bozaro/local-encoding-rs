@@ -5,8 +5,10 @@ extern crate kernel32;
 use std::ptr;
 use std::io::{Error, ErrorKind, Result};
 use std::ffi::OsStr;
+use std::marker::PhantomData;
 use std::os::windows::ffi::OsStrExt;
 use self::winapi::{BOOL, DWORD};
+use super::Encoding;
 
 /// Always use precomposed characters, that is, characters having a single character value for
 /// a base or nonspacing character combination.
@@ -33,18 +35,59 @@ pub const WC_ERR_INVALID_CHARS: DWORD = 0x00000080;
 /// the default character specified by lpDefaultChar.
 pub const WC_NO_BEST_FIT_CHARS: DWORD = 0x00000400;
 
-/// Convert OEM 8-bit string to String.
-///
-/// Use MultiByteToWideChar with current system OEM code page (CP_OEMCP).
-pub fn oem_to_string(data: &[u8]) -> Result<String> {
-    multi_byte_to_wide_char(winapi::CP_OEMCP, MB_ERR_INVALID_CHARS, data)
+/// Trait for provide codepage constant as type name.
+pub trait CodePage {
+    /// Code page to use in performing the conversion. This parameter can be set to the value of any
+    /// code page that is installed or available in the operating system.
+    ///
+    /// For a list of code pages, see
+    /// https://msdn.microsoft.com/ru-ru/library/windows/desktop/dd317756(v=vs.85).aspx
+    fn codepage() -> DWORD;
 }
+
+/// CP_ACP constant provider.
+pub struct ACP;
+
+impl CodePage for ACP {
+    fn codepage() -> DWORD {
+        winapi::CP_ACP
+    }
+}
+
+/// CP_OEMCP constant provider.
+pub struct OEMCP;
+
+impl CodePage for OEMCP {
+    fn codepage() -> DWORD {
+        winapi::CP_OEMCP
+    }
+}
+
+/// Encoding for use WinAPI calls: MultiByteToWideChar and WideCharToMultiByte.
+pub struct CodePageEncoding<C: CodePage>(PhantomData<C>);
 
 /// Convert ANSI 8-bit string to String.
 ///
-/// Use MultiByteToWideChar with system default Windows ANSI code page (CP_ACP).
-pub fn ansi_to_string(data: &[u8]) -> Result<String> {
-    multi_byte_to_wide_char(winapi::CP_ACP, MB_ERR_INVALID_CHARS, data)
+/// * Use MultiByteToWideChar with system default Windows ANSI code page (CP_ACP).
+/// * Use WideCharToMultiByte with system default Windows ANSI code page (CP_ACP).
+pub type ANSI = CodePageEncoding<ACP>;
+
+/// Convert ANSI 8-bit string to String.
+///
+/// * Use MultiByteToWideChar with system default Windows ANSI code page (CP_OEMCP).
+/// * Use WideCharToMultiByte with system default Windows ANSI code page (CP_OEMCP).
+pub type OEM = CodePageEncoding<OEMCP>;
+
+impl<C: CodePage> Encoding for CodePageEncoding<C> {
+    ///     Convert from bytes to string.
+    fn to_string(data: &[u8]) -> Result<String> {
+        multi_byte_to_wide_char(C::codepage(), MB_ERR_INVALID_CHARS, data)
+    }
+
+    /// Convert from string to bytes.
+    fn to_bytes(data: &str) -> Result<Vec<u8>> {
+        string_to_multibyte(C::codepage(), data, None)
+    }
 }
 
 /// Convert String to 8-bit string.
@@ -73,20 +116,6 @@ pub fn string_to_multibyte(codepage: DWORD,
         } else {
             Ok(data)
         })
-}
-
-/// Convert String to OEM 8-bit string.
-///
-/// Use WideCharToMultiByte with current system OEM code page (CP_OEMCP).
-pub fn string_to_oem(data: &str) -> Result<Vec<u8>> {
-    string_to_multibyte(winapi::CP_OEMCP, data, None)
-}
-
-/// Convert String to ANSI 8-bit string.
-///
-/// Use WideCharToMultiByte with system default Windows ANSI code page (CP_ACP).
-pub fn string_to_ansi(data: &str) -> Result<Vec<u8>> {
-    string_to_multibyte(winapi::CP_ACP, data, None)
 }
 
 /// Wrapper for MultiByteToWideChar.
@@ -270,14 +299,4 @@ fn wide_char_to_multi_byte_invalid() {
                                        true)
                    .unwrap(),
                (b" ".to_vec(), false));
-}
-
-#[test]
-fn oem_to_string_test() {
-    assert_eq!(oem_to_string(b"Test").unwrap(), "Test");
-}
-
-#[test]
-fn ansi_to_string_test() {
-    assert_eq!(ansi_to_string(b"Test").unwrap(), "Test");
 }
