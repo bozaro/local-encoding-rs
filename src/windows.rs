@@ -5,10 +5,9 @@ extern crate kernel32;
 use std::ptr;
 use std::io::{Error, ErrorKind, Result};
 use std::ffi::OsStr;
-use std::marker::PhantomData;
 use std::os::windows::ffi::OsStrExt;
 use self::winapi::{BOOL, DWORD};
-use super::Encoding;
+use super::Encoder;
 
 /// Always use precomposed characters, that is, characters having a single character value for
 /// a base or nonspacing character combination.
@@ -35,58 +34,18 @@ pub const WC_ERR_INVALID_CHARS: DWORD = 0x00000080;
 /// the default character specified by lpDefaultChar.
 pub const WC_NO_BEST_FIT_CHARS: DWORD = 0x00000400;
 
-/// Trait for provide codepage constant as type name.
-pub trait CodePage {
-    /// Code page to use in performing the conversion. This parameter can be set to the value of any
-    /// code page that is installed or available in the operating system.
-    ///
-    /// For a list of code pages, see
-    /// https://msdn.microsoft.com/ru-ru/library/windows/desktop/dd317756(v=vs.85).aspx
-    fn codepage() -> DWORD;
-}
-
-/// CP_ACP constant provider.
-pub struct ACP;
-
-impl CodePage for ACP {
-    fn codepage() -> DWORD {
-        winapi::CP_ACP
-    }
-}
-
-/// CP_OEMCP constant provider.
-pub struct OEMCP;
-
-impl CodePage for OEMCP {
-    fn codepage() -> DWORD {
-        winapi::CP_OEMCP
-    }
-}
-
 /// Encoding for use WinAPI calls: MultiByteToWideChar and WideCharToMultiByte.
-pub struct CodePageEncoding<C: CodePage>(PhantomData<C>);
+pub struct EncoderCodePage(pub u32);
 
-/// Convert ANSI 8-bit string to String.
-///
-/// * Use MultiByteToWideChar with system default Windows ANSI code page (CP_ACP).
-/// * Use WideCharToMultiByte with system default Windows ANSI code page (CP_ACP).
-pub type ANSI = CodePageEncoding<ACP>;
-
-/// Convert ANSI 8-bit string to String.
-///
-/// * Use MultiByteToWideChar with system default Windows ANSI code page (CP_OEMCP).
-/// * Use WideCharToMultiByte with system default Windows ANSI code page (CP_OEMCP).
-pub type OEM = CodePageEncoding<OEMCP>;
-
-impl<C: CodePage> Encoding for CodePageEncoding<C> {
+impl Encoder for EncoderCodePage {
     ///     Convert from bytes to string.
-    fn to_string(data: &[u8]) -> Result<String> {
-        multi_byte_to_wide_char(C::codepage(), MB_ERR_INVALID_CHARS, data)
+    fn to_string(self: &Self, data: &[u8]) -> Result<String> {
+        multi_byte_to_wide_char(self.0, MB_ERR_INVALID_CHARS, data)
     }
 
     /// Convert from string to bytes.
-    fn to_bytes(data: &str) -> Result<Vec<u8>> {
-        string_to_multibyte(C::codepage(), data, None)
+    fn to_bytes(self: &Self, data: &str) -> Result<Vec<u8>> {
+        string_to_multibyte(self.0, data, None)
     }
 }
 
@@ -305,43 +264,29 @@ fn wide_char_to_multi_byte_invalid() {
 mod tests {
     extern crate winapi;
 
-    use self::winapi::DWORD;
     use super::*;
-    use super::super::Encoding;
+    use super::super::Encoder;
 
-    pub struct CP1251;
-    pub struct CP866;
-
-    impl CodePage for CP1251 {
-        fn codepage() -> DWORD {
-            1251
-        }
-    }
-    impl CodePage for CP866 {
-        fn codepage() -> DWORD {
-            866
-        }
-    }
     #[test]
     fn cp1251_to_string_test() {
-        assert_eq!(CodePageEncoding::<CP1251>::to_string(b"\xD2\xE5\xF1\xF2").unwrap(),
+        assert_eq!(EncoderCodePage(1251).to_string(b"\xD2\xE5\xF1\xF2").unwrap(),
                    "Тест");
     }
     #[test]
     fn string_to_cp1251_test() {
-        assert_eq!(CodePageEncoding::<CP1251>::to_bytes("Тест").unwrap(),
+        assert_eq!(EncoderCodePage(1251).to_bytes("Тест").unwrap(),
                    b"\xD2\xE5\xF1\xF2");
     }
 
     #[test]
     fn cp866_to_string_test() {
-        assert_eq!(CodePageEncoding::<CP866>::to_string(b"\x92\xA5\xE1\xE2").unwrap(),
+        assert_eq!(EncoderCodePage(866).to_string(b"\x92\xA5\xE1\xE2").unwrap(),
                    "Тест");
     }
 
     #[test]
     fn string_to_cp866_test() {
-        assert_eq!(CodePageEncoding::<CP866>::to_bytes("Тест").unwrap(),
+        assert_eq!(EncoderCodePage(866).to_bytes("Тест").unwrap(),
                    b"\x92\xA5\xE1\xE2");
     }
 }
