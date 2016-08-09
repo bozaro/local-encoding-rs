@@ -7,6 +7,7 @@ use std::io::{Error, ErrorKind, Result};
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use self::winapi::{BOOL, DWORD};
+use super::Encoder;
 
 /// Always use precomposed characters, that is, characters having a single character value for
 /// a base or nonspacing character combination.
@@ -33,18 +34,19 @@ pub const WC_ERR_INVALID_CHARS: DWORD = 0x00000080;
 /// the default character specified by lpDefaultChar.
 pub const WC_NO_BEST_FIT_CHARS: DWORD = 0x00000400;
 
-/// Convert OEM 8-bit string to String.
-///
-/// Use MultiByteToWideChar with current system OEM code page (CP_OEMCP).
-pub fn oem_to_string(data: &[u8]) -> Result<String> {
-    multi_byte_to_wide_char(winapi::CP_OEMCP, MB_ERR_INVALID_CHARS, data)
-}
+/// Encoding for use WinAPI calls: MultiByteToWideChar and WideCharToMultiByte.
+pub struct EncoderCodePage(pub u32);
 
-/// Convert ANSI 8-bit string to String.
-///
-/// Use MultiByteToWideChar with system default Windows ANSI code page (CP_ACP).
-pub fn ansi_to_string(data: &[u8]) -> Result<String> {
-    multi_byte_to_wide_char(winapi::CP_ACP, MB_ERR_INVALID_CHARS, data)
+impl Encoder for EncoderCodePage {
+    ///     Convert from bytes to string.
+    fn to_string(self: &Self, data: &[u8]) -> Result<String> {
+        multi_byte_to_wide_char(self.0, MB_ERR_INVALID_CHARS, data)
+    }
+
+    /// Convert from string to bytes.
+    fn to_bytes(self: &Self, data: &str) -> Result<Vec<u8>> {
+        string_to_multibyte(self.0, data, None)
+    }
 }
 
 /// Convert String to 8-bit string.
@@ -73,20 +75,6 @@ pub fn string_to_multibyte(codepage: DWORD,
         } else {
             Ok(data)
         })
-}
-
-/// Convert String to OEM 8-bit string.
-///
-/// Use WideCharToMultiByte with current system OEM code page (CP_OEMCP).
-pub fn string_to_oem(data: &str) -> Result<Vec<u8>> {
-    string_to_multibyte(winapi::CP_OEMCP, data, None)
-}
-
-/// Convert String to ANSI 8-bit string.
-///
-/// Use WideCharToMultiByte with system default Windows ANSI code page (CP_ACP).
-pub fn string_to_ansi(data: &str) -> Result<Vec<u8>> {
-    string_to_multibyte(winapi::CP_ACP, data, None)
 }
 
 /// Wrapper for MultiByteToWideChar.
@@ -272,12 +260,33 @@ fn wide_char_to_multi_byte_invalid() {
                (b" ".to_vec(), false));
 }
 
-#[test]
-fn oem_to_string_test() {
-    assert_eq!(oem_to_string(b"Test").unwrap(), "Test");
-}
+#[cfg(test)]
+mod tests {
+    extern crate winapi;
 
-#[test]
-fn ansi_to_string_test() {
-    assert_eq!(ansi_to_string(b"Test").unwrap(), "Test");
+    use super::*;
+    use super::super::Encoder;
+
+    #[test]
+    fn cp1251_to_string_test() {
+        assert_eq!(EncoderCodePage(1251).to_string(b"\xD2\xE5\xF1\xF2").unwrap(),
+                   "Тест");
+    }
+    #[test]
+    fn string_to_cp1251_test() {
+        assert_eq!(EncoderCodePage(1251).to_bytes("Тест").unwrap(),
+                   b"\xD2\xE5\xF1\xF2");
+    }
+
+    #[test]
+    fn cp866_to_string_test() {
+        assert_eq!(EncoderCodePage(866).to_string(b"\x92\xA5\xE1\xE2").unwrap(),
+                   "Тест");
+    }
+
+    #[test]
+    fn string_to_cp866_test() {
+        assert_eq!(EncoderCodePage(866).to_bytes("Тест").unwrap(),
+                   b"\x92\xA5\xE1\xE2");
+    }
 }

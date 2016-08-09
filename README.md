@@ -37,8 +37,11 @@ For example:
 ```rust
 extern crate local_encoding;
 
+use local_encoding::{Encoding, Encoder};
+
 fn main()
 {
-	println!("Unicode string: {}", local_encoding::ansi_to_string(b"ANSI string").unwrap());
+	println!("Unicode string: {}", Encoding::ANSI.to_string(b"ANSI string").unwrap());
+	println!("Unicode string: {}", Encoding::OEM.to_string(b"OEM string").unwrap());
 }
 ```

@@ -1,30 +1,18 @@
 //! UTF-8 string converting for non-Windows systems.
 use std::io::{Error, ErrorKind, Result};
+use super::Encoder;
 
-/// Convert OEM 8-bit string to String.
-///
-/// On non-Windows systems convert UTF-8 to String.
-pub fn oem_to_string(data: &[u8]) -> Result<String> {
-    String::from_utf8(data.to_vec()).map_err(|e| Error::new(ErrorKind::InvalidInput, e))
-}
+/// Convert UTF-8 bytes to String.
+pub struct EncoderUtf8;
 
-/// Convert ANSI 8-bit string to String.
-///
-/// On non-Windows systems convert UTF-8 to String.
-pub fn ansi_to_string(data: &[u8]) -> Result<String> {
-    String::from_utf8(data.to_vec()).map_err(|e| Error::new(ErrorKind::InvalidInput, e))
-}
+impl Encoder for EncoderUtf8 {
+    /// Convert UTF-8 to String.
+    fn to_string(self: &Self, data: &[u8]) -> Result<String> {
+        String::from_utf8(data.to_vec()).map_err(|e| Error::new(ErrorKind::InvalidInput, e))
+    }
 
-/// Convert String to OEM 8-bit string.
-///
-/// On non-Windows systems convert String to UTF-8.
-pub fn string_to_oem(data: &str) -> Result<Vec<u8>> {
-    Ok(data.as_bytes().to_vec())
-}
-
-/// Convert String to ANSI 8-bit string.
-///
-/// On non-Windows systems convert String to UTF-8.
-pub fn string_to_ansi(data: &str) -> Result<Vec<u8>> {
-    Ok(data.as_bytes().to_vec())
+    /// Convert String to UTF-8.
+    fn to_bytes(self: &Self, data: &str) -> Result<Vec<u8>> {
+        Ok(data.as_bytes().to_vec())
+    }
 }

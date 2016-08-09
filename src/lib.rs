@@ -17,38 +17,100 @@
 //! UTF-8 used as 8-bit codepage for non-Windows system.
 
 #![warn(missing_docs)]
-#[cfg(any(windows, feature="doc"))]
-pub mod windows;
 #[cfg(windows)]
-pub use windows::{ansi_to_string, oem_to_string, string_to_ansi, string_to_oem};
+pub mod windows;
 pub mod posix;
-#[cfg(any(not(windows), feature="doc"))]
-pub use posix::{ansi_to_string, oem_to_string, string_to_ansi, string_to_oem};
+use std::io::Result;
+
+/// Converter between string and multibyte encoding.
+pub trait Encoder {
+    /// Convert from bytes to string.
+    fn to_string(self: &Self, data: &[u8]) -> Result<String>;
+
+    /// Convert from string to bytes.
+    fn to_bytes(self: &Self, data: &str) -> Result<Vec<u8>>;
+}
+
+/// Text convertation encoding.
+pub enum Encoding {
+    /// Use CP_ACP codepage on Windows and UTF-8 on other systems.
+    ANSI,
+    /// Use CP_OEM codepage on Windows and UTF-8 on other systems.
+    OEM,
+}
+
+#[cfg(windows)]
+trait CodePage {
+    fn codepage(self: &Self) -> u32;
+}
+
+#[cfg(windows)]
+impl CodePage for Encoding {
+    fn codepage(self: &Self) -> u32 {
+        extern crate winapi;
+
+        match self {
+            &Encoding::ANSI => winapi::CP_ACP,
+            &Encoding::OEM => winapi::CP_OEMCP,
+        }
+    }
+}
+
+#[cfg(windows)]
+impl Encoder for Encoding {
+    /// Convert from bytes to string.
+    fn to_string(self: &Self, data: &[u8]) -> Result<String> {
+        windows::EncoderCodePage(self.codepage()).to_string(data)
+
+    }
+    /// Convert from bytes to string.
+    fn to_bytes(self: &Self, data: &str) -> Result<Vec<u8>> {
+        windows::EncoderCodePage(self.codepage()).to_bytes(data)
+    }
+}
+
+#[cfg(not(windows))]
+impl Encoder for Encoding {
+    /// Convert from bytes to string.
+    fn to_string(self: &Self, data: &[u8]) -> Result<String> {
+        posix::EncoderUtf8.to_string(data)
+
+    }
+    /// Convert from bytes to string.
+    fn to_bytes(self: &Self, data: &str) -> Result<Vec<u8>> {
+        posix::EncoderUtf8.to_bytes(data)
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Result;
+
     #[test]
     fn oem_to_string_test() {
-        to_string_test(oem_to_string);
+        to_string_test(Encoding::OEM);
     }
+
     #[test]
     fn ansi_to_string_test() {
-        to_string_test(ansi_to_string);
+        to_string_test(Encoding::ANSI);
     }
+
     #[test]
     fn string_to_oem_test() {
-        from_string_test(string_to_oem);
+        from_string_test(Encoding::OEM);
     }
+
     #[test]
     fn string_to_ansi_test() {
-        from_string_test(string_to_ansi);
+        from_string_test(Encoding::ANSI);
     }
-    fn to_string_test<F: FnOnce(&[u8]) -> Result<String>>(f: F) {
-        assert_eq!(f(b"Test").unwrap(), "Test");
+
+    fn to_string_test(encoding: Encoding) {
+        assert_eq!(encoding.to_string(b"Test").unwrap(), "Test");
     }
-    fn from_string_test<F: FnOnce(&str) -> Result<Vec<u8>>>(f: F) {
-        assert_eq!(&f("Test").unwrap(), b"Test");
+
+    fn from_string_test(encoding: Encoding) {
+        assert_eq!(encoding.to_bytes("Test").unwrap(), b"Test");
     }
 }
