@@ -3,7 +3,6 @@ name = "local-encoding"
 license = "MIT"
 version = "0.2.0"
 authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
-build = "src/build.rs"
 description = "Rust library for encoding/decoding string with local charset. It usefull for work with ANSI strings on Windows."
 repository = "https://github.com/bozaro/local-encoding-rs"
 documentation = "https://bozaro.github.io/local-encoding-rs/local_encoding/"
@@ -12,9 +11,3 @@ documentation = "https://bozaro.github.io/local-encoding-rs/local_encoding/"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = [ "stringapiset", "winnls" ] }
-
-[dev-dependencies]
-skeptic = "0.4"
-
-[build-dependencies]
-skeptic = "0.4"
