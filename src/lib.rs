@@ -17,9 +17,9 @@
 //! UTF-8 used as 8-bit codepage for non-Windows system.
 
 #![warn(missing_docs)]
+pub mod posix;
 #[cfg(windows)]
 pub mod windows;
-pub mod posix;
 use std::io::Result;
 
 /// Converter between string and multibyte encoding.
@@ -61,7 +61,6 @@ impl Encoder for Encoding {
     /// Convert from bytes to string.
     fn to_string(self: &Self, data: &[u8]) -> Result<String> {
         windows::EncoderCodePage(self.codepage()).to_string(data)
-
     }
     /// Convert from bytes to string.
     fn to_bytes(self: &Self, data: &str) -> Result<Vec<u8>> {
@@ -74,7 +73,6 @@ impl Encoder for Encoding {
     /// Convert from bytes to string.
     fn to_string(self: &Self, data: &[u8]) -> Result<String> {
         posix::EncoderUtf8.to_string(data)
-
     }
     /// Convert from bytes to string.
     fn to_bytes(self: &Self, data: &str) -> Result<Vec<u8>> {

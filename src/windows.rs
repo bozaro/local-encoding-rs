@@ -1,14 +1,14 @@
 //! 8-bit string converters for Windows systems.
 extern crate winapi;
 
-use std::ptr;
-use std::io::{Error, ErrorKind, Result};
-use std::ffi::OsStr;
-use std::os::windows::ffi::OsStrExt;
 use self::winapi::shared::minwindef::{BOOL, DWORD};
 use self::winapi::um::stringapiset::{MultiByteToWideChar, WideCharToMultiByte};
 use self::winapi::um::winnt::LPSTR;
 use super::Encoder;
+use std::ffi::OsStr;
+use std::io::{Error, ErrorKind, Result};
+use std::os::windows::ffi::OsStrExt;
+use std::ptr;
 
 #[cfg(test)]
 use self::winapi::um::winnls::{CP_ACP, CP_UTF8};
@@ -63,54 +63,66 @@ impl Encoder for EncoderCodePage {
 ///                    in the specified code page.
 ///
 /// Returns `Err` if an invalid input character is encountered and `default_char` is `None`.
-pub fn string_to_multibyte(codepage: DWORD,
-                           data: &str,
-                           default_char: Option<u8>)
-                           -> Result<Vec<u8>> {
+pub fn string_to_multibyte(
+    codepage: DWORD,
+    data: &str,
+    default_char: Option<u8>,
+) -> Result<Vec<u8>> {
     let wstr: Vec<u16> = OsStr::new(data).encode_wide().collect();
-    wide_char_to_multi_byte(codepage,
-                            WC_COMPOSITECHECK,
-                            &wstr,
-                            default_char,
-                            default_char.is_none())
-        .and_then(|(data, invalid)| if invalid {
-            Err(Error::new(ErrorKind::InvalidInput,
-                           "Can't convert some characters to multibyte charset"))
+    wide_char_to_multi_byte(
+        codepage,
+        WC_COMPOSITECHECK,
+        &wstr,
+        default_char,
+        default_char.is_none(),
+    )
+    .and_then(|(data, invalid)| {
+        if invalid {
+            Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Can't convert some characters to multibyte charset",
+            ))
         } else {
             Ok(data)
-        })
+        }
+    })
 }
 
 /// Wrapper for MultiByteToWideChar.
 ///
 /// See https://msdn.microsoft.com/en-us/library/windows/desktop/dd319072(v=vs.85).aspx
 /// for more details.
-pub fn multi_byte_to_wide_char(codepage: DWORD,
-                               flags: DWORD,
-                               multi_byte_str: &[u8])
-                               -> Result<String> {
+pub fn multi_byte_to_wide_char(
+    codepage: DWORD,
+    flags: DWORD,
+    multi_byte_str: &[u8],
+) -> Result<String> {
     // Empty string
     if multi_byte_str.len() == 0 {
         return Ok(String::new());
     }
     unsafe {
         // Get length of UTF-16 string
-        let len = MultiByteToWideChar(codepage,
-                                                flags,
-                                                multi_byte_str.as_ptr() as LPSTR,
-                                                multi_byte_str.len() as i32,
-                                                ptr::null_mut(),
-                                                0);
+        let len = MultiByteToWideChar(
+            codepage,
+            flags,
+            multi_byte_str.as_ptr() as LPSTR,
+            multi_byte_str.len() as i32,
+            ptr::null_mut(),
+            0,
+        );
         if len > 0 {
             // Convert to UTF-16
             let mut wstr: Vec<u16> = Vec::with_capacity(len as usize);
             wstr.set_len(len as usize);
-            let len = MultiByteToWideChar(codepage,
-                                                    flags,
-                                                    multi_byte_str.as_ptr() as LPSTR,
-                                                    multi_byte_str.len() as i32,
-                                                    wstr.as_mut_ptr(),
-                                                    len);
+            let len = MultiByteToWideChar(
+                codepage,
+                flags,
+                multi_byte_str.as_ptr() as LPSTR,
+                multi_byte_str.len() as i32,
+                wstr.as_mut_ptr(),
+                len,
+            );
             if len > 0 {
                 return String::from_utf16(&wstr[0..(len as usize)])
                     .map_err(|e| Error::new(ErrorKind::InvalidInput, e));
@@ -118,33 +130,35 @@ pub fn multi_byte_to_wide_char(codepage: DWORD,
         }
         Err(Error::last_os_error())
     }
-
 }
 
 /// Wrapper for WideCharToMultiByte.
 ///
 /// See https://msdn.microsoft.com/ru-ru/library/windows/desktop/dd374130(v=vs.85).aspx
 /// for more details.
-pub fn wide_char_to_multi_byte(codepage: DWORD,
-                               flags: DWORD,
-                               wide_char_str: &[u16],
-                               default_char: Option<u8>,
-                               use_default_char_flag: bool)
-                               -> Result<(Vec<u8>, bool)> {
+pub fn wide_char_to_multi_byte(
+    codepage: DWORD,
+    flags: DWORD,
+    wide_char_str: &[u16],
+    default_char: Option<u8>,
+    use_default_char_flag: bool,
+) -> Result<(Vec<u8>, bool)> {
     // Empty string
     if wide_char_str.len() == 0 {
         return Ok((Vec::new(), false));
     }
     unsafe {
         // Get length of multibyte string
-        let len = WideCharToMultiByte(codepage,
-                                                flags,
-                                                wide_char_str.as_ptr(),
-                                                wide_char_str.len() as i32,
-                                                ptr::null_mut(),
-                                                0,
-                                                ptr::null(),
-                                                ptr::null_mut());
+        let len = WideCharToMultiByte(
+            codepage,
+            flags,
+            wide_char_str.as_ptr(),
+            wide_char_str.len() as i32,
+            ptr::null_mut(),
+            0,
+            ptr::null(),
+            ptr::null_mut(),
+        );
 
         if len > 0 {
             // Convert from UTF-16 to multibyte
@@ -155,20 +169,22 @@ pub fn wide_char_to_multi_byte(codepage: DWORD,
                 None => [0],
             };
             let mut use_char_ref: [BOOL; 1] = [0];
-            let len = WideCharToMultiByte(codepage,
-                                                    flags,
-                                                    wide_char_str.as_ptr(),
-                                                    wide_char_str.len() as i32,
-                                                    astr.as_mut_ptr() as LPSTR,
-                                                    len,
-                                                    match default_char {
-                                                        Some(_) => default_char_ref.as_ptr(),
-                                                        None => ptr::null(),
-                                                    },
-                                                    match use_default_char_flag {
-                                                        true => use_char_ref.as_mut_ptr(),
-                                                        false => ptr::null_mut(),
-                                                    });
+            let len = WideCharToMultiByte(
+                codepage,
+                flags,
+                wide_char_str.as_ptr(),
+                wide_char_str.len() as i32,
+                astr.as_mut_ptr() as LPSTR,
+                len,
+                match default_char {
+                    Some(_) => default_char_ref.as_ptr(),
+                    None => ptr::null(),
+                },
+                match use_default_char_flag {
+                    true => use_char_ref.as_mut_ptr(),
+                    false => ptr::null_mut(),
+                },
+            );
             if (len as usize) == astr.len() {
                 return Ok((astr, use_char_ref[0] != 0));
             }
@@ -182,23 +198,31 @@ pub fn wide_char_to_multi_byte(codepage: DWORD,
 
 #[test]
 fn multi_byte_to_wide_char_empty() {
-    assert_eq!(multi_byte_to_wide_char(CP_ACP, MB_ERR_INVALID_CHARS, b"").unwrap(),
-               "");
+    assert_eq!(
+        multi_byte_to_wide_char(CP_ACP, MB_ERR_INVALID_CHARS, b"").unwrap(),
+        ""
+    );
 }
 
 #[test]
 fn multi_byte_to_wide_char_ascii() {
-    assert_eq!(multi_byte_to_wide_char(CP_ACP, MB_ERR_INVALID_CHARS, b"Test").unwrap(),
-               "Test");
+    assert_eq!(
+        multi_byte_to_wide_char(CP_ACP, MB_ERR_INVALID_CHARS, b"Test").unwrap(),
+        "Test"
+    );
 }
 
 #[test]
 fn multi_byte_to_wide_char_utf8() {
-    assert_eq!(multi_byte_to_wide_char(CP_UTF8,
-                                       MB_ERR_INVALID_CHARS,
-                                       b"\xD0\xA2\xD0\xB5\xD1\x81\xD1\x82")
-                   .unwrap(),
-               "Тест");
+    assert_eq!(
+        multi_byte_to_wide_char(
+            CP_UTF8,
+            MB_ERR_INVALID_CHARS,
+            b"\xD0\xA2\xD0\xB5\xD1\x81\xD1\x82"
+        )
+        .unwrap(),
+        "Тест"
+    );
 }
 
 #[test]
@@ -208,89 +232,99 @@ fn multi_byte_to_wide_char_invalid() {
 
 #[test]
 fn wide_char_to_multi_byte_empty() {
-    assert_eq!(wide_char_to_multi_byte(CP_UTF8, WC_ERR_INVALID_CHARS, &[], None, false)
-                   .unwrap(),
-               (b"".to_vec(), false));
+    assert_eq!(
+        wide_char_to_multi_byte(CP_UTF8, WC_ERR_INVALID_CHARS, &[], None, false).unwrap(),
+        (b"".to_vec(), false)
+    );
 }
 
 #[test]
 fn wide_char_to_multi_byte_ascii() {
-    assert_eq!(wide_char_to_multi_byte(CP_ACP,
-                                       WC_COMPOSITECHECK,
-                                       &[0x0054, 0x0065, 0x0073, 0x0074],
-                                       None,
-                                       true)
-                   .unwrap(),
-               (b"Test".to_vec(), false));
+    assert_eq!(
+        wide_char_to_multi_byte(
+            CP_ACP,
+            WC_COMPOSITECHECK,
+            &[0x0054, 0x0065, 0x0073, 0x0074],
+            None,
+            true
+        )
+        .unwrap(),
+        (b"Test".to_vec(), false)
+    );
 }
 
 #[test]
 fn wide_char_to_multi_byte_utf8() {
-    assert_eq!(wide_char_to_multi_byte(CP_UTF8,
-                                       WC_ERR_INVALID_CHARS,
-                                       &[0x6F22],
-                                       None,
-                                       false)
-                   .unwrap(),
-               (b"\xE6\xBC\xA2".to_vec(), false));
+    assert_eq!(
+        wide_char_to_multi_byte(CP_UTF8, WC_ERR_INVALID_CHARS, &[0x6F22], None, false).unwrap(),
+        (b"\xE6\xBC\xA2".to_vec(), false)
+    );
 }
 
 #[test]
 fn wide_char_to_multi_byte_replace() {
-    assert_eq!(wide_char_to_multi_byte(CP_ACP,
-                                       WC_DEFAULTCHAR | WC_COMPOSITECHECK,
-                                       &[0x0054, 0x0065, 0x0073, 0x0074, 0x6F22, 0x0029],
-                                       Some(b':'),
-                                       true)
-                   .unwrap(),
-               (b"Test:)".to_vec(), true));
+    assert_eq!(
+        wide_char_to_multi_byte(
+            CP_ACP,
+            WC_DEFAULTCHAR | WC_COMPOSITECHECK,
+            &[0x0054, 0x0065, 0x0073, 0x0074, 0x6F22, 0x0029],
+            Some(b':'),
+            true
+        )
+        .unwrap(),
+        (b"Test:)".to_vec(), true)
+    );
 }
 
 #[test]
 fn wide_char_to_multi_byte_invalid() {
-    assert_eq!(wide_char_to_multi_byte(CP_ACP,
-                                       WC_COMPOSITECHECK,
-                                       &[0x6F22],
-                                       Some(b':'),
-                                       true)
-                   .unwrap(),
-               (b":".to_vec(), true));
-    assert_eq!(wide_char_to_multi_byte(CP_ACP,
-                                       WC_COMPOSITECHECK,
-                                       &[0x0020],
-                                       Some(b':'),
-                                       true)
-                   .unwrap(),
-               (b" ".to_vec(), false));
+    assert_eq!(
+        wide_char_to_multi_byte(CP_ACP, WC_COMPOSITECHECK, &[0x6F22], Some(b':'), true).unwrap(),
+        (b":".to_vec(), true)
+    );
+    assert_eq!(
+        wide_char_to_multi_byte(CP_ACP, WC_COMPOSITECHECK, &[0x0020], Some(b':'), true).unwrap(),
+        (b" ".to_vec(), false)
+    );
 }
 
 #[cfg(test)]
 mod tests {
     extern crate winapi;
 
-    use super::*;
     use super::super::Encoder;
+    use super::*;
 
     #[test]
     fn cp1251_to_string_test() {
-        assert_eq!(EncoderCodePage(1251).to_string(b"\xD2\xE5\xF1\xF2").unwrap(),
-                   "Тест");
+        assert_eq!(
+            EncoderCodePage(1251)
+                .to_string(b"\xD2\xE5\xF1\xF2")
+                .unwrap(),
+            "Тест"
+        );
     }
     #[test]
     fn string_to_cp1251_test() {
-        assert_eq!(EncoderCodePage(1251).to_bytes("Тест").unwrap(),
-                   b"\xD2\xE5\xF1\xF2");
+        assert_eq!(
+            EncoderCodePage(1251).to_bytes("Тест").unwrap(),
+            b"\xD2\xE5\xF1\xF2"
+        );
     }
 
     #[test]
     fn cp866_to_string_test() {
-        assert_eq!(EncoderCodePage(866).to_string(b"\x92\xA5\xE1\xE2").unwrap(),
-                   "Тест");
+        assert_eq!(
+            EncoderCodePage(866).to_string(b"\x92\xA5\xE1\xE2").unwrap(),
+            "Тест"
+        );
     }
 
     #[test]
     fn string_to_cp866_test() {
-        assert_eq!(EncoderCodePage(866).to_bytes("Тест").unwrap(),
-                   b"\x92\xA5\xE1\xE2");
+        assert_eq!(
+            EncoderCodePage(866).to_bytes("Тест").unwrap(),
+            b"\x92\xA5\xE1\xE2"
+        );
     }
 }
