@@ -50,8 +50,8 @@ impl CodePage for Encoding {
         extern crate winapi;
 
         match self {
-            &Encoding::ANSI => winapi::um::winnls::CP_ACP,
-            &Encoding::OEM => winapi::um::winnls::CP_OEMCP,
+            Encoding::ANSI => winapi::um::winnls::CP_ACP,
+            Encoding::OEM => winapi::um::winnls::CP_OEMCP,
         }
     }
 }
