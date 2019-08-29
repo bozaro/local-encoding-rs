@@ -1,6 +1,6 @@
 //! UTF-8 string converting for non-Windows systems.
-use std::io::{Error, ErrorKind, Result};
 use super::Encoder;
+use std::io::{Error, ErrorKind, Result};
 
 /// Convert UTF-8 bytes to String.
 pub struct EncoderUtf8;

@@ -1,16 +1,31 @@
 language: rust
-sudo: false
-script:
-- cargo build --verbose
-- cargo test --verbose
-- cargo doc
-after_success: |
-  [ $TRAVIS_BRANCH = master ] &&
-  [ $TRAVIS_PULL_REQUEST = false ] &&
-  echo '<meta http-equiv=refresh content=0;url=filetime/index.html>' > target/doc/index.html &&
-  pip install ghp-import --user $USER &&
-  $HOME/.local/bin/ghp-import -n target/doc &&
-  git push -qf https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+cache: cargo
+
 env:
   global:
   - secure: dn2yo0Op526XvaqExqv7v4yKbCXn0Daa1x0HI3sgHqPtLV9q6IENXRizfIy5TBPQxKREg1Ia/cwX5UryqIEmxeZSwF6TvmLybvO5HgLtg9yM2h/N0v7M+HQTye7R4sVkROX0hkHN98r/iONgZt3h0TEvc1ydD3MXSdCUoSRWjYhZZY2wZTvwC5zFrNuYJ2K2sfAOE9trQMDAgTppabHow6im80LRuyZa+TrNcT0JPsdv7/1WRkujFBsPQYQOaF7ch7g+eJlrqk2OfaJNC8B9mMS/mpjQNqmP8V44Z9CB/aimdxhmP8Tvk5XSuNayY3dRdaPYT+sE9FWEdroU95jHNHoAxFc5QdrKYUPI05hORV56d/Jssjm4XBc5IgqhkAIxBJ9OOjjkb1ra1F4BcBcfjv6By7K+XClFrbkrs8Nf32DPzzZBytRldVANeYaf560On/z1pWSCa7ZV8+Px0lk/xO87HMXz5JYbBtPuaUvcbDquOAhBvDe8WPKTqaPt19eBW8cnjlCjvWzUtHqsoNx/jg357MWp15B/wByna+bFAsX/AXpigpZIiyq55tQ/Kiwp1XJeveuPdzaNYhNNb9O2tCxHNI1Kk4iaKv4P/dxHvAEdohu8bQ3fQbWIspdICbm94K+vzQysGJCCT7IfYxMGqb+47Ou/jOV9Kn2P0zgIzXY=
+
+os:
+  - linux
+  - windows
+  - osx
+
+script:
+  - cargo build --verbose
+  - cargo test --verbose
+
+matrix:
+  include:
+    - name: gh-pages
+      os: linux
+      script:
+        - cargo doc
+        - echo '<meta http-equiv=refresh content=0;url=local_encoding/index.html>' > target/doc/index.html
+      deploy:
+        - provider: pages
+          skip_cleanup: true
+          local_dir: target/doc
+          github_token: ${TOKEN}
+          on:
+            branch: master
+            repo: bozaro/local-encoding-rs
